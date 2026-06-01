@@ -1,13 +1,14 @@
 package auth
 
+// отвечает за сохранение и поиск
 import "errors"
 
 var usersDB = make(map[string]User)
-var idCounter = 1
+var idCounter = 1 // для создания уникального ID для каждого пользователя
 
 type Repository struct{}
 
-func NewRepisitory() *Repository {
+func NewRepository() *Repository {
 	return &Repository{}
 }
 func (r Repository) CreateUser(username string, passwordHash string) (User, error) {
