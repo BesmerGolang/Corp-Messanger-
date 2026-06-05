@@ -1,33 +1,26 @@
 package main
 
 import (
-	"net/http"
 	"textMessanger/internal/auth"
+	"textMessanger/internal/ws"
 
 	"github.com/gin-gonic/gin"
 )
 
 func main() {
+	repo := auth.NewRepository()
+	authHandler := auth.NewHandler(repo)
+
+	hub := ws.NewHub()
+	go hub.Run()
+
 	r := gin.Default()
 
-	authRepo := auth.NewRepository()
-	authHandler := auth.NewHandler(authRepo)
+	r.POST("/register", authHandler.Register)
+	r.POST("/login", authHandler.Login)
 
-	authGroup := r.Group("/auth")
-	{
-		authGroup.POST("/register", authHandler.Register)
-		authGroup.POST("/login", authHandler.Login)
-	}
-	// Приватные маршруты (требуют токен)
-	protected := r.Group("/api")
-	protected.Use(auth.AuthMiddleware())
-	{
-		// Пример: получить информацию о текущем пользователе
-		protected.GET("/me", func(c *gin.Context) {
-			userID, _ := c.Get("userID")
-			// Здесь можно сходить в репозиторий и вернуть данные пользователя
-			c.JSON(http.StatusOK, gin.H{"user_id": userID})
-		})
-	}
+	r.GET("/ws", func(c *gin.Context) {
+		ws.ServeWs(hub, repo, c)
+	})
 	r.Run(":8080")
 }

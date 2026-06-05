@@ -10,7 +10,7 @@ type Client struct {
 	hub    *Hub
 	conn   *websocket.Conn
 	send   chan []byte
-	userID float64
+	userID int
 }
 
 func (c *Client) readPump() {

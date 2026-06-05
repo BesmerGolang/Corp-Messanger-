@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Go WebSocket Chat</title>
+</head>
+<body>
+    <h2>Чат (Пользователь: Alex)</h2>
+    <div id="chat" style="height: 300px; border: 1px solid black; overflow-y: scroll; padding: 10px; margin-bottom: 10px;"></div>
+    
+    <input type="text" id="msgInput" placeholder="Введите сообщение..." style="width: 300px;">
+    <button onclick="sendMessage()">Отправить</button>
+
+    <script>
+        // 1. Подключаемся к твоему Go-серверу от имени Alex
+        const ws = new WebSocket("ws://localhost:8080/ws?username=Alex");
+        const chatDiv = document.getElementById("chat");
+
+        // 2. Обработка успешного подключения
+        ws.onopen = function() {
+            chatDiv.innerHTML += "<b>[Система]: Соединение установлено!</b><br>";
+        };
+
+        // 3. Обработка входящих сообщений
+        ws.onmessage = function(event) {
+            chatDiv.innerHTML += `<i>Получено:</i> ${event.data}<br>`;
+            chatDiv.scrollTop = chatDiv.scrollHeight; // автоскролл вниз
+        };
+
+        // 4. Обработка закрытия/ошибок
+        ws.onclose = () => chatDiv.innerHTML += "<b>[Система]: Соединение закрыто.</b><br>";
+        ws.onerror = (err) => console.error("Ошибка WS:", err);
+
+        // 5. Функция отправки сообщения на сервер
+        function sendMessage() {
+            const input = document.getElementById("msgInput");
+            if (input.value && ws.readyState === WebSocket.OPEN) {
+                ws.send(input.value); // Отправляем данные в твой readPump!
+                input.value = "";     // Очищаем поле
+            }
+        }
+    </script>
+</body>
+</html>
