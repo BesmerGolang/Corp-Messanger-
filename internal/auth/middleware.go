@@ -11,19 +11,23 @@ import (
 
 func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		var tokenString string
+
 		authHeader := c.GetHeader("Authorization")
-		if authHeader == "" {
+		if authHeader != "" {
+			parts := strings.SplitN(authHeader, " ", 2)
+			if len(parts) == 2 && strings.ToLower(parts[0]) == "bearer" {
+				tokenString = parts[1]
+			}
+		}
+		if tokenString == "" {
+			tokenString = c.Query("token")
+		}
+
+		if tokenString == "" {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Токен не предоставлен"})
 			return
 		}
-
-		parts := strings.SplitN(authHeader, " ", 2)
-		if len(parts) != 2 || strings.ToLower(parts[0]) != "bearer" {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Неверный формат токена"})
-			return
-		}
-
-		tokenString := parts[1]
 		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 				return nil, fmt.Errorf("неожиданный метод подписи: %v", token.Header["alg"])
@@ -40,12 +44,12 @@ func AuthMiddleware() gin.HandlerFunc {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Ошибка обработки токена"})
 			return
 		}
-		userID, ok := claims["user_id"].(float64)
+		userIDFloat, ok := claims["user_id"].(float64)
 		if !ok {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Неверный формат user_id в токене"})
 			return
 		}
-		c.Set("userID", int(userID))
+		c.Set("userID", int(userIDFloat))
 
 		c.Next()
 	}

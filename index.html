@@ -1,44 +1,80 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <title>Go WebSocket Chat</title>
-</head>
-<body>
-    <h2>Чат (Пользователь: Alex)</h2>
-    <div id="chat" style="height: 300px; border: 1px solid black; overflow-y: scroll; padding: 10px; margin-bottom: 10px;"></div>
-    
-    <input type="text" id="msgInput" placeholder="Введите сообщение..." style="width: 300px;">
-    <button onclick="sendMessage()">Отправить</button>
+    <!-- Блок логина и регистрации -->
+    <div id="loginBlock">
+        <input type="text" id="username" placeholder="Логин (например, Alex)"><br><br>
+        <input type="password" id="password" placeholder="Пароль (например, 123)"><br><br>
+        <button onclick="login()">Войти в чат</button>
+        <button onclick="register()">Зарегистрироваться</button> <!-- НОВАЯ КНОПКА -->
+    </div>
+
+    <!-- Блок чата (скрыт по умолчанию) -->
+    <div id="chatBlock" style="display: none;">
+        <div id="chat" style="height: 300px; border: 1px solid black; overflow-y: scroll; padding: 10px; margin-bottom: 10px;"></div>
+        <input type="text" id="msgInput" placeholder="Введите сообщение..." style="width: 300px;">
+        <button onclick="sendMessage()">Отправить</button>
+    </div>
 
     <script>
-        // 1. Подключаемся к твоему Go-серверу от имени Alex
-        const ws = new WebSocket("ws://localhost:8080/ws?username=Alex");
-        const chatDiv = document.getElementById("chat");
+        let ws;
 
-        // 2. Обработка успешного подключения
-        ws.onopen = function() {
-            chatDiv.innerHTML += "<b>[Система]: Соединение установлено!</b><br>";
-        };
+        // НОВАЯ ФУНКЦИЯ: Регистрация
+        async function register() {
+            const user = document.getElementById("username").value;
+            const pass = document.getElementById("password").value;
 
-        // 3. Обработка входящих сообщений
-        ws.onmessage = function(event) {
-            chatDiv.innerHTML += `<i>Получено:</i> ${event.data}<br>`;
-            chatDiv.scrollTop = chatDiv.scrollHeight; // автоскролл вниз
-        };
+            const response = await fetch("http://localhost:8080/register", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ username: user, password: pass })
+            });
 
-        // 4. Обработка закрытия/ошибок
-        ws.onclose = () => chatDiv.innerHTML += "<b>[Система]: Соединение закрыто.</b><br>";
-        ws.onerror = (err) => console.error("Ошибка WS:", err);
+            if (response.ok) {
+                alert("Аккаунт успешно создан! Теперь нажмите 'Войти в чат'.");
+            } else {
+                alert("Ошибка регистрации. Возможно, логин уже занят или пуст.");
+            }
+        }
 
-        // 5. Функция отправки сообщения на сервер
+        // Функция логина (твоя старая)
+        async function login() {
+            const user = document.getElementById("username").value;
+            const pass = document.getElementById("password").value;
+
+            const response = await fetch("http://localhost:8080/login", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ username: user, password: pass })
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                const token = data.token; 
+                
+                document.getElementById("loginBlock").style.display = "none";
+                document.getElementById("chatBlock").style.display = "block";
+                
+                connectWebSocket(token);
+            } else {
+                alert("Ошибка логина! Проверьте логин и пароль.");
+            }
+        }
+
+        function connectWebSocket(token) {
+            ws = new WebSocket("ws://localhost:8080/ws?token=" + token);
+            const chatDiv = document.getElementById("chat");
+
+            ws.onopen = () => chatDiv.innerHTML += "<b>[Система]: Соединение установлено!</b><br>";
+            ws.onmessage = (event) => {
+                chatDiv.innerHTML += `<i>Сообщение:</i> ${event.data}<br>`;
+                chatDiv.scrollTop = chatDiv.scrollHeight;
+            };
+            ws.onclose = () => chatDiv.innerHTML += "<b>[Система]: Соединение закрыто.</b><br>";
+        }
+
         function sendMessage() {
             const input = document.getElementById("msgInput");
-            if (input.value && ws.readyState === WebSocket.OPEN) {
-                ws.send(input.value); // Отправляем данные в твой readPump!
-                input.value = "";     // Очищаем поле
+            if (input.value && ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(input.value);
+                input.value = "";
             }
         }
     </script>
-</body>
-</html>

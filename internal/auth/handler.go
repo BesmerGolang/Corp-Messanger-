@@ -1,9 +1,6 @@
 package auth
 
 import (
-	"crypto/rand"
-	"encoding/base64"
-	"log"
 	"net/http"
 	"time"
 
@@ -12,17 +9,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-func easyJwtSecret() []byte {
-	key := make([]byte, 32)
-	_, err := rand.Read(key)
-	if err != nil {
-		log.Fatal("не удалось создать jwtSecret")
-	}
-	jwtSecret := []byte(base64.StdEncoding.EncodeToString(key))
-	return jwtSecret
-}
-
-var jwtSecret []byte = easyJwtSecret()
+var jwtSecret = []byte("super-secret-key-for-my-chat-app-12345")
 
 type Handler struct {
 	repo *Repository // экземпляр структуры Repository для которой я писал метод CreateUser в repositiry

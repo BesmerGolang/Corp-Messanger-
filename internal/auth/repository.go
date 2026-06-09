@@ -1,33 +1,40 @@
 package auth
 
 // отвечает за сохранение и поиск
-import "errors"
+import (
+	"database/sql"
+	"fmt"
+)
 
-var usersDB = make(map[string]User)
-var idCounter = 1 // для создания уникального ID для каждого пользователя
-
-type Repository struct{}
-
-func NewRepository() *Repository {
-	return &Repository{}
+type Repository struct { // хранит базу данных
+	db *sql.DB
 }
-func (r Repository) CreateUser(username string, passwordHash string) (User, error) {
-	if _, exist := usersDB[username]; exist {
-		return User{}, errors.New("User already exist")
+
+func NewRepository(db *sql.DB) *Repository {
+	return &Repository{
+		db: db,
 	}
-	user := User{
-		ID:           idCounter,
+}
+func (r *Repository) CreateUser(username string, passwordHash string) (User, error) {
+	sqlQuery := `INSERT INTO users (username, password_hash) VALUES (?, ?)`
+	result, err := r.db.Exec(sqlQuery, username, passwordHash)
+	if err != nil {
+		return User{}, fmt.Errorf("пользователь уже существует или ошибка БД: %v", err)
+	}
+	id, _ := result.LastInsertId()
+	return User{
+		ID:           int(id),
 		Username:     username,
 		PasswordHash: passwordHash,
-	}
-	usersDB[username] = user
-	idCounter++
-	return user, nil
+	}, nil
+
 }
-func (r Repository) GetUserByUsername(username string) (User, error) {
-	user, exist := usersDB[username]
-	if !exist {
-		return User{}, errors.New("User doesn't exist")
+func (r *Repository) GetUserByUsername(username string) (User, error) {
+	var user User
+	sqlQuery := `SELECT id, username, password_hash FROM users WHERE username = ?`
+	err := r.db.QueryRow(sqlQuery, username).Scan(&user.ID, &user.Username, &user.PasswordHash)
+	if err != nil {
+		return User{}, err
 	}
 	return user, nil
 }

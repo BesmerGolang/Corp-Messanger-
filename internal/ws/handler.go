@@ -3,7 +3,6 @@ package ws
 import (
 	"fmt"
 	"net/http"
-	"textMessanger/internal/auth"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
@@ -19,19 +18,13 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
-func ServeWs(hub *Hub, repo *auth.Repository, c *gin.Context) {
-	userName := c.Query("username") // получаем имя пользователя из query параметров
-	if userName == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Username not found"})
+func ServeWs(hub *Hub, c *gin.Context) {
+	userIDAny, exist := c.Get("userID")
+	if !exist {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "пользователь не авторизован"})
 		return
 	}
-
-	user, err := repo.GetUserByUsername(userName)
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not found"})
-		return
-	}
-
+	userID := userIDAny.(int)
 	send := make(chan []byte, 256)
 
 	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
@@ -44,7 +37,7 @@ func ServeWs(hub *Hub, repo *auth.Repository, c *gin.Context) {
 		hub:    hub,
 		conn:   conn,
 		send:   send,
-		userID: user.ID,
+		userID: userID,
 	}
 
 	hub.register <- newClient
