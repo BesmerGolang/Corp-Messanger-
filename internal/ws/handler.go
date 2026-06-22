@@ -39,6 +39,14 @@ func ServeWs(hub *Hub, c *gin.Context) {
 		send:   send,
 		userID: userID,
 	}
+	history, err := hub.repo.GetLastMessages()
+	if err != nil {
+		for _, msg := range history {
+			newClient.conn.WriteJSON(msg)
+		}
+	} else {
+		fmt.Println("Ошибка загрузки истории")
+	}
 
 	hub.register <- newClient
 	go newClient.writePump()

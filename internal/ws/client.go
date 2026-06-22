@@ -1,6 +1,7 @@
 package ws
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/gorilla/websocket"
@@ -25,7 +26,23 @@ func (c *Client) readPump() {
 			fmt.Println("Ошибка чтения сообщений из контекста webSocket")
 			break
 		}
-		c.hub.broadcast <- message //запомнить, вот это просто отправка в канал
+		err = c.hub.repo.SaveMessage(c.userID, string(message))
+		if err != nil {
+			fmt.Println("Ошибка сохранения в БД:", err)
+		}
+		msgData := struct {
+			UserID  int    `json:"user_id"`
+			Content string `json:"content"`
+		}{
+			UserID:  c.userID,
+			Content: string(message),
+		}
+		jsonBytes, err := json.Marshal(msgData)
+		if err != nil {
+			fmt.Println("Ошибка упаковки JSON:", err)
+			continue
+		}
+		c.hub.broadcast <- jsonBytes
 	}
 }
 func (c *Client) writePump() {

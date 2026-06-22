@@ -20,8 +20,21 @@ func InitDB() *sql.DB {
 		username TEXT UNIQUE NOT NULL,
 		password_hash TEXT NOT NULL
 	);`
-	// чуть выше, мы при помощи текстовой команды на языке SQL(язык общения с базами данных) - дали команду создать таблицу с полями id,username,password_hash
+	msgQuery := `CREATE TABLE IF NOT EXISTS messages (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    content TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);`
+	// чуть выше, мы при помощи текстовой команды на языке SQL(язык общения с базами данных) - дали команды создать таблицы
+
 	_, err = db.Exec(query) // собственно сам SQL запрос
+
+	if err != nil {
+		log.Fatal("Ошибка SQL запроса:", err)
+	}
+	_, err = db.Exec(msgQuery)
+
 	if err != nil {
 		log.Fatal("Ошибка SQL запроса:", err)
 	}

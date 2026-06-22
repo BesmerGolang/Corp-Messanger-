@@ -15,7 +15,7 @@ func CORSMiddleware() gin.HandlerFunc {
 		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")
 		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT")
 
-		if c.Request.Method == "OPTIONS" { //Вот такой запрос он отправляет что бы проверить, все ли гуд с сервером, поэтому на него автоматом отвечает 204 типо все гуд
+		if c.Request.Method == "OPTIONS" { //Вот такой запрос он отправляет что бы проверить, все ли гуд с сервером, поэтому на него автоматом отвечаем 204 типо все гуд
 			c.AbortWithStatus(204)
 			return
 		}
@@ -30,7 +30,7 @@ func main() {
 	repo := auth.NewRepository(db)
 	authHandler := auth.NewHandler(repo)
 
-	hub := ws.NewHub()
+	hub := ws.NewHub(repo)
 	go hub.Run()
 
 	r := gin.Default()
