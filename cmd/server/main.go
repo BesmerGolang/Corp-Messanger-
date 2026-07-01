@@ -34,10 +34,13 @@ func main() {
 	go hub.Run()
 
 	r := gin.Default()
+	r.MaxMultipartMemory = 8 << 20
 	r.SetTrustedProxies(nil)
 	r.Use(CORSMiddleware())
 	r.POST("/register", authHandler.Register)
 	r.POST("/login", authHandler.Login)
+	r.POST("/upload", auth.UploadFile)
+	r.Static("/uploads", "./uploads")
 
 	r.GET("/ws", auth.AuthMiddleware(), func(c *gin.Context) {
 		ws.ServeWs(hub, c)

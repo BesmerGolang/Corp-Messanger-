@@ -41,11 +41,14 @@ func ServeWs(hub *Hub, c *gin.Context) {
 	}
 	history, err := hub.repo.GetLastMessages()
 	if err != nil {
+		// Если ошибка РЕАЛЬНО есть, печатаем её красным!
+		fmt.Printf("❌ ОШИБКА БАЗЫ ДАННЫХ ПРИ ЗАГРУЗКЕ ИСТОРИИ: %v\n", err)
+	} else {
+		// Если ошибки нет, отправляем историю
+		fmt.Printf("✅ История успешно загружена, найдено сообщений: %d\n", len(history))
 		for _, msg := range history {
 			newClient.conn.WriteJSON(msg)
 		}
-	} else {
-		fmt.Println("Ошибка загрузки истории")
 	}
 
 	hub.register <- newClient
